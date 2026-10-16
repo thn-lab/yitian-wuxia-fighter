@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>倚天屠龍記：群俠格鬥傳 v2.5 (六大場景底圖自動載入＋無向量線純淨格鬥版)</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+</head>
+<body>
+<div id="loadingOverlay">
+  <div class="taiji-spinner"></div>
+  <div style="font-size:20px; font-weight:900; letter-spacing:2px;">☯️ 倚天屠龍群俠傳 ・ 正在凝練真氣載入圖資…</div>
+  <div id="loadingStatusText" style="font-size:13px; color:#82ccdd; margin-top:4px;">已針對 iPad Pro (120Hz) 與 Edge 瀏覽器進行極速解碼優化</div>
+  <div class="loading-bar-wrap"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
+</div>
+<div id="wuxiaToast"></div>
+
+
+<header class="top-bar">
+  <div class="brand-title">
+    <span class="brand-calligraphy">倚天屠龍記・群俠格鬥傳 v2.5</span>
+    <span class="badge-ver">🏯 六大場景底圖自動載入＋🚫 移除攻擊向量線＋🎙️ iPad 智慧防女聲配音＋⏸️ 戰局暫停</span>
+  </div>
+  <div class="nav-btns">
+    <button class="btn-wuxia active" id="modeTeamBtn" onclick="setGameMode('team')">⚔️ 3v3 組隊車輪戰</button>
+    <button class="btn-wuxia" id="modeStoryBtn" onclick="setGameMode('story')">📜 6大關卡破關劇情</button>
+    <button class="btn-wuxia" id="modeVsBtn" onclick="setGameMode('vs')">🥋 1v1 自由對戰</button>
+    <button class="btn-wuxia btn-jade" onclick="toggleModal('rosterModal', true)">📖 48 人全武林圖鑑與進度</button>
+    <button class="btn-wuxia btn-jade" onclick="cycleVoiceMode()" id="voiceBtn">🗣️ 語音：智慧防女聲(iPad推薦)</button>
+    <button class="btn-wuxia btn-jade" onclick="testCurrentCharVoice()" id="testVoiceBtn">🎙️ 試聽台詞</button>
+    <button class="btn-wuxia btn-jade" onclick="toggleSound()" id="soundBtn">🔊 音效：開</button>
+    <button class="btn-wuxia" style="background:linear-gradient(180deg,#1e3799,#0c2461); border-color:#70a1ff; color:#fff;" onclick="openStandaloneGameTab()">🚀 獨立新分頁開啟</button>
+    <button class="btn-wuxia" style="background:linear-gradient(180deg,#218c74,#114b3e); border-color:#33d9b2; color:#fff;" onclick="downloadStandaloneHtml()">💾 下載單檔離線版</button>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <section class="setup-panel">
+    <div>
+      <div class="section-label">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span id="selectPromptText">👉 點擊角色卡編組隊伍：</span>
+          <div class="team-target-toggle">
+            <button class="target-opt active-p1" id="targetBtnP1" onclick="setTouchSelectTarget('p1')">🔵 點選我方(P1)</button>
+            <button class="target-opt" id="targetBtnP2" onclick="setTouchSelectTarget('p2')">🔴 點選敵方(P2)</button>
+          </div>
+        </div>
+        <div style="display:flex; gap:5px; flex-wrap:wrap;">
+          <label class="btn-wuxia btn-jade" style="padding:2px 8px; font-size:11.5px; cursor:pointer;">
+            🖼️ 替換P1原畫圖 <input type="file" accept="image/*" style="display:none" onchange="loadCustomCharPortrait(event)">
+          </label>
+          <button class="btn-wuxia" style="padding:2px 8px; font-size:11.5px;" onclick="randomizeMatch()">🎲 隨機宿敵</button>
+          <button class="btn-wuxia" style="padding:2px 8px; font-size:11.5px;" onclick="triggerHiddenBossFight()">🔥 四大傳奇Boss戰</button>
+        </div>
+      </div>
+
+      <!-- Batch Filter Tabs -->
+      <div class="batch-tabs">
+        <button class="batch-tab active" id="tab_all" onclick="filterRoster('all')">全部可玩角色 (27人)</button>
+        <button class="batch-tab" id="tab_b1" onclick="filterRoster('b1')">第一批：主角與宗師 (6人)</button>
+        <button class="batch-tab" id="tab_b2" onclick="filterRoster('b2')">第二批：明教高層法王 (6人)</button>
+        <button class="batch-tab" id="tab_b3" onclick="filterRoster('b3')">第三批：紅顏天鷹死敵 (5人)</button>
+        <button class="batch-tab" id="tab_b6" onclick="filterRoster('b6')">第六批：汝陽王府高手 (6人)</button>
+        <button class="batch-tab" id="tab_b8" onclick="filterRoster('b8')">第八批：隱藏傳奇宗師 (4人)</button>
+      </div>
+
+      <div class="roster-grid" id="rosterGrid"></div>
+    </div>
+
+    <div class="stage-and-teams">
+      <div>
+        <div class="section-label">
+          <span>🏯 全 6 大經典對戰場景選擇</span>
+          <label style="font-size:11px; color:var(--jade-light); cursor:pointer;">
+            📂 載入自訂場景背景圖 <input type="file" accept="image/*" style="display:none" onchange="loadCustomStageBg(event)">
+          </label>
+        </div>
+        <div class="stage-selector">
+          <button class="stage-btn active" id="stageBtn_0" onclick="selectStage(0)">🔥 明教光明頂<br><span style="font-size:10px; color:#b8b0a0;">崑崙聖火廣場</span></button>
+          <button class="stage-btn" id="stageBtn_1" onclick="selectStage(1)">☯️ 武當紫霄宮<br><span style="font-size:10px; color:#b8b0a0;">三清殿太極場</span></button>
+          <button class="stage-btn" id="stageBtn_2" onclick="selectStage(2)">🏮 大都萬安寺<br><span style="font-size:10px; color:#b8b0a0;">烈焰十三層高塔</span></button>
+          <button class="stage-btn" id="stageBtn_3" onclick="selectStage(3)">🐍 靈蛇島海岸<br><span style="font-size:10px; color:#b8b0a0;">波斯戰船奇石灘</span></button>
+          <button class="stage-btn" id="stageBtn_4" onclick="selectStage(4)">🌋 冰火島極境<br><span style="font-size:10px; color:#b8b0a0;">火山熔岩與玄冰</span></button>
+          <button class="stage-btn" id="stageBtn_5" onclick="selectStage(5)">🔔 少林屠獅大會<br><span style="font-size:10px; color:#b8b0a0;">三棵古松伏魔圈</span></button>
+        </div>
+      </div>
+
+      <div class="team-lineup-box" id="lineupInfoBox"></div>
+
+      <div style="display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+        <div style="display:flex; gap:6px; align-items:center; font-size:12px;">
+          <span>AI 難度：</span>
+          <select id="aiDiffSelect" onchange="setAiDifficulty(this.value)" style="background:#1c1924; color:var(--gold-bright); border:1px solid var(--gold); padding:3px 7px; border-radius:4px; font-family:inherit;">
+            <option value="0.65">初入江湖（輕鬆體驗）</option>
+            <option value="1.0" selected>一流高手（標準對決）</option>
+            <option value="1.45">絕頂宗師（硬派格鬥）</option>
+          </select>
+          <span style="margin-left:6px;">節奏速度：</span>
+          <select id="gameSpeedSelect" onchange="setGameSpeedScale(this.value)" style="background:#1c1924; color:#82ccdd; border:1px solid var(--jade); padding:3px 7px; border-radius:4px; font-family:inherit;">
+            <option value="0.72">慢速拆招 (72%)</option>
+            <option value="0.88" selected>武俠標準 (88%・iPad推薦)</option>
+            <option value="1.0">街機疾速 (100%)</option>
+          </select>
+        </div>
+        <button class="btn-wuxia" style="padding:6px 16px; font-size:14px; background:linear-gradient(180deg,#b33919,#6e1b09); border-color:#ffbe76; color:#fff;" onclick="startNewMatch()">🔔 重新開戰 / 下一局</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Fighting Game Canvas + Semi-Transparent Tablet Touch Overlay -->
+  <div class="arena-container" id="arenaContainer">
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <!-- Semi-Transparent Tablet & Mobile On-Screen Controls -->
+    <div class="touch-hud-overlay" id="touchHudOverlay">
+      <div class="arena-top-tools">
+        <button class="hud-mini-btn" onclick="togglePauseGame()" id="hudPauseBtn">⏸️ 暫停 [P]</button>
+        <button class="hud-mini-btn" onclick="testCurrentCharVoice()">🎙️ 播報當前角色語音</button>
+        <button class="hud-mini-btn" onclick="cycleTouchHudOpacity()" id="hudOpacityBtn">📱 半透明按鍵：標準 (55%)</button>
+        <button class="hud-mini-btn" id="fullscreenToggleBtn" onclick="toggleArenaFullscreen()">⛶ iPad 滿版全螢幕</button>
+      </div>
+
+      <div class="touch-bottom-row">
+        <!-- Left Hand: Semi-Transparent D-Pad -->
+        <div class="touch-dpad">
+          <button class="t-btn dpad-up" id="tBtnUp">▲<span class="t-sub">輕功</span></button>
+          <button class="t-btn dpad-left" id="tBtnLeft">◀<span class="t-sub">後撤</span></button>
+          <button class="t-btn dpad-right" id="tBtnRight">▶<span class="t-sub">疾進</span></button>
+          <button class="t-btn dpad-down" id="tBtnDown">🛡️<span class="t-sub">防禦</span></button>
+        </div>
+
+        <!-- Right Hand: Semi-Transparent Wuxia Skill Cluster -->
+        <div class="touch-actions">
+          <button class="t-btn act-super" id="tBtnSuper">
+            <span>🔥 超必殺</span>
+            <span class="t-sub" id="tSub_super">奧義特寫</span>
+          </button>
+          <button class="t-btn act-skill1" id="tBtnSkill1">
+            <span>一招</span>
+            <span class="t-sub" id="tSub_skill1">15氣</span>
+          </button>
+          <button class="t-btn act-skill2" id="tBtnSkill2">
+            <span>二招</span>
+            <span class="t-sub" id="tSub_skill2">25氣</span>
+          </button>
+          <button class="t-btn act-skill3" id="tBtnSkill3">
+            <span>絕技</span>
+            <span class="t-sub" id="tSub_skill3">35氣</span>
+          </button>
+          <button class="t-btn act-normal" id="tBtnNormal">
+            <span>⚔️ 普攻</span>
+            <span class="t-sub" id="tSub_normal">連擊</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- In-Arena Pause Modal (v2.4/v2.5) -->
+    <div id="pauseOverlay">
+      <div class="pause-card">
+        <div style="font-size:26px; font-weight:900; color:var(--gold-bright); letter-spacing:2px; margin-bottom:6px;">⏸️ 武林對決・暫停中</div>
+        <div style="font-size:13px; color:#82ccdd; margin-bottom:12px;">戰局已鎖定，時間與雙雄招式均已暫停。</div>
+        <div id="pauseVoiceInfoBox" style="background:rgba(10,8,15,0.9); border:1px solid rgba(217,178,111,0.35); border-radius:8px; padding:10px 12px; font-size:12px; line-height:1.6; color:#dcdde1; margin-bottom:16px;"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <button class="btn-wuxia" style="padding:10px; font-size:14px; background:linear-gradient(180deg,#1e6f50,#103d2b); border-color:#2ed573; color:#fff;" onclick="togglePauseGame()">▶️ 繼續戰鬥 [P / 空白鍵]</button>
+          <button class="btn-wuxia btn-jade" style="padding:10px; font-size:14px;" onclick="testFighterVoice(true)">🔊 試聽 P1 語音與聲線</button>
+          <button class="btn-wuxia btn-jade" style="padding:10px; font-size:14px;" onclick="testFighterVoice(false)">🔊 試聽 P2 語音與聲線</button>
+          <button class="btn-wuxia" style="padding:10px; font-size:14px;" onclick="togglePauseGame(false); startNewMatch();">🔄 重新開始本局</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skill & Control Deck -->
+  <section class="control-deck">
+    <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+      <span style="font-size:12px; color:var(--gold-bright); font-weight:700;">步法：</span>
+      <button class="btn-wuxia" onmousedown="holdMove('left',true)" onmouseup="holdMove('left',false)" onmouseleave="holdMove('left',false)" ontouchstart="holdMove('left',true)" ontouchend="holdMove('left',false)">◀ 後撤 [A]</button>
+      <button class="btn-wuxia" onclick="playerJump()">▲ 輕功縱躍 [W]</button>
+      <button class="btn-wuxia" onmousedown="holdMove('down',true)" onmouseup="holdMove('down',false)" onmouseleave="holdMove('down',false)" ontouchstart="holdMove('down',true)" ontouchend="holdMove('down',false)">🛡️ 運氣防禦 [S]</button>
+      <button class="btn-wuxia" onmousedown="holdMove('right',true)" onmouseup="holdMove('right',false)" onmouseleave="holdMove('right',false)" ontouchstart="holdMove('right',true)" ontouchend="holdMove('right',false)">▶ 疾進 [D]</button>
+      <button class="btn-wuxia" id="deckPauseBtn" onclick="togglePauseGame()">⏸️ 暫停 [P]</button>
+    </div>
+
+    <div class="move-buttons">
+      <button class="skill-btn" onclick="triggerPlayerAttack('normal')">
+        <span class="key-hint">普攻連段 [J]</span>
+        <span class="skill-title" id="btnName_normal">兵器三連擊</span>
+      </button>
+      <button class="skill-btn" onclick="triggerPlayerAttack('skill1')">
+        <span class="key-hint">小招・15內力 [U]</span>
+        <span class="skill-title" id="btnName_skill1">九陽護體</span>
+      </button>
+      <button class="skill-btn" onclick="triggerPlayerAttack('skill2')">
+        <span class="key-hint">中招・25內力 [I]</span>
+        <span class="skill-title" id="btnName_skill2">太極雲手</span>
+      </button>
+      <button class="skill-btn" onclick="triggerPlayerAttack('skill3')">
+        <span class="key-hint">絕技・35內力 [O]</span>
+        <span class="skill-title" id="btnName_skill3">聖火令奇招</span>
+      </button>
+      <button class="skill-btn super-btn" id="superSkillBtn" onclick="triggerPlayerAttack('super')">
+        <span class="key-hint">🔥 超必殺特寫・滿怒氣 [L / 空白鍵]</span>
+        <span class="skill-title" id="btnName_super">乾坤大挪移・九陽焚天</span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<!-- 48-Character Full Roster Modal -->
+<div class="modal-backdrop" id="rosterModal" onclick="if(event.target===this)toggleModal('rosterModal',false)">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2 style="color:var(--gold-bright); font-size:19px;">📜 《倚天屠龍記》全 48 位角色進度表（目前已實裝 27 人＋全 6 大經典場景）</h2>
+      <button class="btn-wuxia" onclick="toggleModal('rosterModal',false)">✕ 關閉</button>
+    </div>
+    <table class="batch-table">
+      <thead>
+        <tr>
+          <th style="width:16%">批次</th>
+          <th style="width:22%">主題陣營</th>
+          <th>收錄角色名單（共 48 人）</th>
+          <th style="width:16%">實裝狀態</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>第一批 (6人)</strong></td>
+          <td>核心主角與宗師</td>
+          <td>張無忌、趙敏、周芷若、張三丰、滅絕師太、金毛獅王謝遜</td>
+          <td style="color:#4cd137; font-weight:700;">✅ 已實裝可玩</td>
+        </tr>
+        <tr>
+          <td><strong>第二批 (6人)</strong></td>
+          <td>明教高層與法王</td>
+          <td>陽頂天、光明左使楊逍、光明右使范遙、紫衫龍王黛綺絲、白眉鷹王殷天正、青翼蝠王韋一笑</td>
+          <td style="color:#4cd137; font-weight:700;">✅ 已實裝可玩</td>
+        </tr>
+        <tr>
+          <td><strong>第三批 (5人)</strong></td>
+          <td>紅顏、天鷹與死敵</td>
+          <td>小昭、殷離（蛛兒）、古墓派黃衣女子、天鷹教殷野王、混元霹靂手成昆</td>
+          <td style="color:#4cd137; font-weight:700;">✅ 已實裝可玩</td>
+        </tr>
+        <tr>
+          <td><strong>第四批 (8人)</strong></td>
+          <td>武當七俠與逆徒</td>
+          <td>宋遠橋、俞蓮舟、俞岱巖、張松溪、張翠山、殷梨亭、莫聲谷、宋青書</td>
+          <td style="color:var(--gold-bright);">⏳ 待下階段擴充</td>
+        </tr>
+        <tr>
+          <td><strong>第五批 (7人)</strong></td>
+          <td>少林四神僧與三渡</td>
+          <td>空見、空聞、空智、空性、渡厄、渡劫、渡難（金剛伏魔圈）</td>
+          <td style="color:var(--gold-bright);">⏳ 待下階段擴充</td>
+        </tr>
+        <tr>
+          <td><strong>第六批 (6人)</strong></td>
+          <td>汝陽王府高手</td>
+          <td>玄冥二老（鹿杖客、鶴筆翁）、阿大（方東白）、阿二、阿三、金剛門剛相</td>
+          <td style="color:#4cd137; font-weight:700;">✅ 已實裝可玩</td>
+        </tr>
+        <tr>
+          <td><strong>第七批 (6人)</strong></td>
+          <td>名門掌門與波斯三使</td>
+          <td>華山派鮮于通、崑崙派何太沖、班淑嫻、波斯明教流雲使、妙風使、輝月使</td>
+          <td style="color:var(--gold-bright);">⏳ 待下階段擴充</td>
+        </tr>
+        <tr>
+          <td><strong>第八批 (4人)</strong></td>
+          <td>四大傳奇隱藏角色</td>
+          <td>火工頭陀、崑崙三聖何足道、郭襄女俠、鬥酒神僧</td>
+          <td style="color:#00e5ff; font-weight:700;">✅ 已實裝可選用</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="js/assets_map.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
